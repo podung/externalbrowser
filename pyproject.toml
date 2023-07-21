@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "externalbrowser"
+version = "0.1.0"
+description = ""
+authors = ["Joe DePung <joe.depung@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+snowflake-connector-python = { path = "./snowflake-connector-python/", develop = true }
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
