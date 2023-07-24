@@ -2,8 +2,6 @@ import snowflake.connector
 import time
 import os
 
-select = "SELECT 42;"
-
 while True:
     with snowflake.connector.connect(
             account=os.environ['SNOWFLAKE_ACCOUNT'],
