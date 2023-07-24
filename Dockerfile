@@ -17,4 +17,7 @@ RUN touch README.md
 
 RUN poetry install && rm -rf $POETRY_CACHE_DIR
 
-ENTRYPOINT ["poetry", "run", "python", "externalbrowser/main.py"]
+COPY docker-entrypoint.sh /
+RUN chmod +x /docker-entrypoint.sh
+
+ENTRYPOINT ["/docker-entrypoint.sh"]

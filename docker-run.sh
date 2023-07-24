@@ -1,1 +1,1 @@
-docker run externalbrowser:latest --envfile .env
+docker run -it  --env-file .env externalbrowser:latest

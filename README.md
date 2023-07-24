@@ -16,3 +16,4 @@ Copy the `.env.example` file to `.env` and set variables to match your settings
 
 # Outstanding issues
 1. Getting browser to open on host from code running in docker container
+  - try this link: https://www.google.com
