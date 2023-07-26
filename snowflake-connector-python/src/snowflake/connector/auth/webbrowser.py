@@ -11,6 +11,7 @@ import os
 import socket
 import time
 import webbrowser
+import threading
 from types import ModuleType
 from typing import TYPE_CHECKING, Any
 
@@ -113,11 +114,15 @@ class AuthByWebBrowser(AuthByPlugin):
         logger.debug("authenticating by Web Browser")
 
         socket_connection = self._socket(socket.AF_INET, socket.SOCK_STREAM)
+        #socket_connection.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        #socket_connection.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
         try:
             try:
                 socket_connection.bind(
                     (
                         os.getenv("SF_AUTH_SOCKET_ADDR", "localhost"),
+                        #3035
                         int(os.getenv("SF_AUTH_SOCKET_PORT", 0)),
                     )
                 )
@@ -132,6 +137,7 @@ class AuthByWebBrowser(AuthByPlugin):
                     raise ex
             socket_connection.listen(0)  # no backlog
             callback_port = socket_connection.getsockname()[1]
+            print(f'Using callback port {callback_port}')
 
             logger.debug("step 1: query GS to obtain SSO url")
             sso_url = self._get_sso_url(
@@ -156,8 +162,12 @@ class AuthByWebBrowser(AuthByPlugin):
                 "or your OS settings. Press CTRL+C to abort and try again..."
             )
 
+            # receive_thread = threading.Thread(target=self._receive_saml_token, args=(conn, socket_connection))
+            # receive_thread.start()
+
             logger.debug("step 2: open a browser")
             print(f"Going to open: {sso_url} to authenticate...")
+
             if not self._webbrowser.open_new(sso_url):
                 print(
                     "We were unable to open a browser window for you, "
@@ -183,6 +193,9 @@ class AuthByWebBrowser(AuthByPlugin):
             else:
                 logger.debug("step 3: accept SAML token")
                 self._receive_saml_token(conn, socket_connection)
+
+            # receive_thread.join()
+
         finally:
             socket_connection.close()
 
@@ -198,33 +211,63 @@ class AuthByWebBrowser(AuthByPlugin):
     def _receive_saml_token(self, conn: SnowflakeConnection, socket_connection) -> None:
         """Receives SAML token from web browser."""
         while True:
-            socket_client, _ = socket_connection.accept()
             try:
+                # Original Code
                 # Receive the data in small chunks and retransmit it
-                data = socket_client.recv(BUF_SIZE).decode("utf-8").split("\r\n")
+                #data = socket_client.recv(BUF_SIZE).decode("utf-8").split("\r\n")
+
+                # Debugging Code
+                attempts = 0
+                socket_client = None
+                raw_data = bytearray()
+
+                while len(raw_data) == 0 and attempts < 5:
+                    attempts += 1
+                    print(f'Attempting to RECV callback from socket, Callback RECV Attempt: {attempts}')
+                    socket_client, _ = socket_connection.accept()
+                    raw_data = socket_client.recv(BUF_SIZE)
+                    time.sleep(1)
+
+                decoded_data = raw_data.decode("utf-8")
+                print("   got me some decoded_data", decoded_data)
+                print(f'LENGTH of decoded_data: {len(decoded_data)}')
+                
+                data = decoded_data.split("\r\n")
+                print("   just split the data")
+
+                print(f'{data}')
+                print(f'LENGTH of DATA: {len(data)}')
+                # End Debugging Code
 
                 if not self._process_options(data, socket_client):
+                    print("Think we MIGHT have a token now???")
                     self._process_receive_saml_token(conn, data, socket_client)
                     break
             finally:
-                socket_client.shutdown(socket.SHUT_RDWR)
-                socket_client.close()
+                print("In Finally block... shutting down the socket")
+                if socket_client:
+                    socket_client.shutdown(socket.SHUT_RDWR)
+                    socket_client.close()
 
     def _process_options(self, data: list[str], socket_client: socket.socket) -> bool:
         """Allows JS Ajax access to this endpoint."""
         for line in data:
             if line.startswith("OPTIONS "):
+                print("i DO HAVE the options")
                 break
         else:
+            print("i DO NOT HAVE the options")
             return False
 
         self._get_user_agent(data)
         requested_headers, requested_origin = self._check_post_requested(data)
         if not requested_headers:
+            print("i DO NOT HAVE requested headers")
             return False
 
         if not self._validate_origin(requested_origin):
             # validate Origin and fail if not match with the server.
+            print("i DO NOT HAVE a validatable origin")
             return False
 
         self._origin = requested_origin
@@ -240,6 +283,7 @@ class AuthByWebBrowser(AuthByPlugin):
             "",
             "",
         ]
+        print("i THINK but IM NOT SURE... I had options and am about to send data back to the web browser that called the localhost port")
         socket_client.sendall("\r\n".join(content).encode("utf-8"))
         return True
 
@@ -261,6 +305,11 @@ class AuthByWebBrowser(AuthByPlugin):
         self, conn: SnowflakeConnection, data: list[str], socket_client: socket.socket
     ) -> None:
         if not self._process_get(data) and not self._process_post(conn, data):
+            print("###########################")
+            print("DID I MAKE IT HERE")
+            print(socket.socket)
+            print("data is:", data)
+            print("###########################")
             return  # error
 
         content = [
@@ -275,6 +324,7 @@ class AuthByWebBrowser(AuthByPlugin):
         else:
             msg = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"/>
+<link rel="icon" href="data:,">
 <title>SAML Response for Snowflake</title></head>
 <body>
 Your identity was confirmed and propagated to Snowflake {}.
@@ -325,6 +375,8 @@ You can close this window now and go back where you started from.
                 target_line = line
                 break
         else:
+            print("$$$$$$$$$$$$$$$")
+            print('      There was no GET in request packets')
             return False
 
         self._get_user_agent(data)
@@ -337,6 +389,9 @@ You can close this window now and go back where you started from.
             if line.startswith("POST "):
                 break
         else:
+            print("**********************************")
+            print(data)
+            print("**********************************")
             self._handle_failure(
                 conn=conn,
                 ret={
