@@ -9,6 +9,7 @@ import json
 import logging
 import os
 import socket
+import select
 import time
 import webbrowser
 import threading
@@ -68,7 +69,7 @@ class AuthByWebBrowser(AuthByPlugin):
         self._application = application
         self._proof_key = None
         self._webbrowser: ModuleType = (
-            webbrowser if webbrowser_pkg is None else webbrowser_pkg
+        webbrowser if webbrowser_pkg is None else webbrowser_pkg
         )
         self._socket: type[socket.socket] = (
             socket.socket if socket_pkg is None else socket_pkg
@@ -222,16 +223,24 @@ class AuthByWebBrowser(AuthByPlugin):
                 raw_data = bytearray()
 
                 while len(raw_data) == 0 and attempts < 5:
-                    attempts += 1
-                    print(f'Attempting to RECV callback from socket, Callback RECV Attempt: {attempts}')
-                    socket_client, _ = socket_connection.accept()
-                    raw_data = socket_client.recv(BUF_SIZE)
-                    time.sleep(1)
+                    print('about to wait on select')
+                    read_sockets, _write_sockets, _exception_sockets = select.select([socket_connection], [], [])
+
+                    print(f'select came back, checking on {read_sockets}')
+                    if read_sockets[0] is not None:
+                        attempts += 1
+                        print(f'Attempting to RECV callback from socket, Callback RECV Attempt: {attempts}')
+                        try:
+                            socket_client, _ = socket_connection.accept()
+                            raw_data = socket_client.recv(BUF_SIZE, socket.MSG_DONTWAIT)
+                        except BlockingIOError:
+                            print('......')
+                            time.sleep(1)
 
                 decoded_data = raw_data.decode("utf-8")
                 print("   got me some decoded_data", decoded_data)
                 print(f'LENGTH of decoded_data: {len(decoded_data)}')
-                
+
                 data = decoded_data.split("\r\n")
                 print("   just split the data")
 

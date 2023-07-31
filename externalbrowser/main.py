@@ -22,4 +22,4 @@ while True:
         time_string = datetime.now().strftime("%H:%M:%S.%f")
         print("{time}: SQL Result={result} [{no_attempts} Connection Attempts]".format(time=time_string, result=result, no_attempts=conn_attempts))
         print("sleeping .......")
-        time.sleep(5)
+        time.sleep(1)
