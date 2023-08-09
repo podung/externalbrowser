@@ -414,18 +414,18 @@ use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 
 [[package]]
 name = "snowflake-connector-python"
-version = "3.0.4"
+version = "3.1.0"
 description = "Snowflake Connector for Python"
 optional = false
 python-versions = ">=3.8"
 files = []
-develop = true
+develop = false
 
 [package.dependencies]
 asn1crypto = ">0.24.0,<2.0.0"
 certifi = ">=2017.4.17"
 cffi = ">=1.9,<2.0.0"
-charset_normalizer = ">=2,<4"
+charset-normalizer = ">=2,<4"
 cryptography = ">=3.1.0,<42.0.0"
 filelock = ">=3.5,<4"
 idna = ">=2.5,<4"
@@ -439,17 +439,19 @@ pytz = "*"
 requests = "<3.0.0"
 sortedcontainers = ">=2.4.0"
 tomlkit = "*"
-typing_extensions = ">=4.3,<5"
+typing-extensions = ">=4.3,<5"
 urllib3 = ">=1.21.1,<1.27"
 
 [package.extras]
-development = ["Cython", "coverage", "more-itertools", "numpy (<1.26.0)", "pendulum (!=2.1.1)", "pexpect", "pytest (<7.4.0)", "pytest-cov", "pytest-rerunfailures", "pytest-timeout", "pytest-xdist", "pytzdata"]
+development = ["Cython", "coverage", "more-itertools", "numpy (<1.26.0)", "pendulum (!=2.1.1)", "pexpect", "pytest (<7.5.0)", "pytest-cov", "pytest-rerunfailures", "pytest-timeout", "pytest-xdist", "pytzdata"]
 pandas = ["pandas (>=1.0.0,<2.1.0)", "pyarrow (>=10.0.1,<10.1.0)"]
 secure-local-storage = ["keyring (!=16.1.0,<25.0.0)"]
 
 [package.source]
-type = "directory"
-url = "snowflake-connector-python"
+type = "git"
+url = "https://github.com/podung/snowflake-connector-python.git"
+reference = "robust_containerized_externalbrowser"
+resolved_reference = "d3f8825f5fc258ea995377c3d8d290a52cc11c3b"
 
 [[package]]
 name = "sortedcontainers"
@@ -503,4 +505,4 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "70c370adaf48a75c549ccfcbd523d88441cdeb77ce58904727f2c9a074af132b"
+content-hash = "d4ea003a0db27c28eef63c6d3ea779e5b506156b346e9ef9e0b94af449c2c392"

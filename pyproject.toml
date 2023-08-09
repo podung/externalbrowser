@@ -7,7 +7,8 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-snowflake-connector-python = { path = "./snowflake-connector-python/", develop = true }
+#snowflake-connector-python = { path = "./snowflake-connector-python/", develop = true }
+snowflake-connector-python = { git = "https://github.com/podung/snowflake-connector-python.git", branch = "robust_containerized_externalbrowser" }
 
 [build-system]
 requires = ["poetry-core"]
